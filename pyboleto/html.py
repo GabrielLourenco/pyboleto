@@ -12,8 +12,8 @@
 import os
 import string
 import sys
-import codecs
 import base64
+import io
 
 from itertools import chain
 if sys.version_info < (3,):
@@ -74,7 +74,7 @@ class BoletoHTML(object):
     def _load_template(self, template):
         pyboleto_dir = os.path.dirname(os.path.abspath(__file__))
         template_path = os.path.join(pyboleto_dir, 'templates', template)
-        with open(template_path, 'r') as tpl:
+        with io.open(template_path, 'r', encoding='utf8') as tpl:
             template_content = tpl.read()
         return template_content
 
@@ -97,11 +97,7 @@ class BoletoHTML(object):
         # Cabeçalho
         tpl_data['logo_img'] = ''
         if boletoDados.logo_image:
-            img = codecs.open(self._load_image(boletoDados.logo_image))
-            aux = img.read()
-            aux = base64.b64encode(aux)
-            img_base64 = 'data:image/jpeg;base64,{0}'.format(aux)
-            tpl_data['logo_img'] = img_base64
+            tpl_data['logo_img'] = self._load_image(boletoDados.logo_image)
         tpl_data['codigo_dv_banco'] = boletoDados.codigo_dv_banco
 
         # Corpo
@@ -155,7 +151,7 @@ class BoletoHTML(object):
         tpl_data['data_vencimento'] = data_vencimento.strftime('%d/%m/%Y')
 
         # value em unicode em data.py
-        if isinstance(boletoDados.local_pagamento, unicode):
+        if isinstance(boletoDados.local_pagamento, str):
             tpl_data['local_pagamento'] = boletoDados.local_pagamento.encode
             ('utf-8')
         else:
@@ -228,6 +224,10 @@ class BoletoHTML(object):
     def nextPage(self):
         """Força início de nova página"""
         self.html += '</div><div class="pagina">'
+    
+    def outputHtml(self):
+        self.html += '</div></body></html>'
+        return self.html
 
     def save(self):
         """Fecha boleto e constroi o arquivo"""
@@ -235,7 +235,7 @@ class BoletoHTML(object):
         if hasattr(self.fileDescr, 'write'):
             self.fileDescr.write(self.html)
         else:
-            with open(self.fileDescr, 'w') as fd:
+            with io.open(self.fileDescr, 'w', encoding='utf8') as fd:
                 fd.write(self.html)
 
     def _formataValorParaExibir(self, nfloat):
@@ -263,6 +263,7 @@ class BoletoHTML(object):
         digits.extend(['w', 'n s', 'n'])
 
         result = []
+
         for digit in digits:
             result.append('<span class="{0}"></span>'.format(digit))
 
