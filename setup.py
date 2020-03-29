@@ -67,7 +67,7 @@ setup(
     platforms='any',
     test_suite='tests.alltests.suite',
     install_requires=[
-        'distribute',
+        # 'distribute',
         'reportlab'
     ],
     tests_require=[
